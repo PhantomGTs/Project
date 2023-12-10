@@ -1,6 +1,7 @@
 const express = require("express")
 const router = express.Router()
 const { nanoid } = require("nanoid")
+const prometheus = require('prom-client');
 
 const idLenght = 8
 
@@ -60,9 +61,9 @@ router.get("/", (req, res) => {
 
 router.get("/:id", (req, res) => {
     const game = req.app.db.get('games').find({id: req.params.id}).value()
-
     res.send(game)
 })
+
 
 
 /**
