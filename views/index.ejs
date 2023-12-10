@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game List</title>
+</head>
+<body>
+    <h1>Game List</h1>
+    <ul>
+        <% games.forEach(game => { %>
+            <li>
+                <%= game.name %> - <%= game.description %>
+                (<a href="/games/<%= game.id %>">View</a>)
+                (<a href="/games/edit/<%= game.id %>">Edit</a>)
+                (<a href="/games/delete/<%= game.id %>">Delete</a>)
+            </li>
+        <% }); %>
+    </ul>
+    <a href="/games/new">Create New Game</a>
+</body>
+</html>
