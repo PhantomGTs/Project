@@ -5,6 +5,7 @@ const low = require('lowdb');
 const swaggerUI = require("swagger-ui-express")
 const swaggerJsDoc = require("swagger-jsdoc")
 const gamesRouter = require("./routes/games")
+const promClient = require('prom-client'); // добавлено
 
 const PORT = process.env.PORT || 4000;
 
@@ -16,20 +17,20 @@ const db = low(adapter);
 db.defaults({ games: [] }).write();
 
 const options = {
-	definition: {
-		openapi: "3.0.0",
-		info: {
-			title: "Camp Games API",
-			version: "1.0.0",
-			description: "A simple collection of games for the camp",
-		},
-		servers: [
-			{
-				url: "http://localhost:4000",
-			},
-		],
-	},
-	apis: ["./routes/*.js"],
+    definition: {
+        openapi: "3.0.0",
+        info: {
+            title: "Camp Games API",
+            version: "1.0.0",
+            description: "A simple collection of games for the camp",
+        },
+        servers: [
+            {
+                url: "http://localhost:4000",
+            },
+        ],
+    },
+    apis: ["./routes/*.js"],
 };
 
 const specs = swaggerJsDoc(options)
@@ -48,6 +49,19 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.json()); 
 app.use(cors());
 app.use(morgan("dev"));
+
+app.get("/counter", (req, res) => {
+    res.send("3");
+});
+
+// Добавлено для метрик Prometheus
+const prometheusMetrics = new promClient.Registry();
+promClient.collectDefaultMetrics({ register: prometheusMetrics });
+
+app.use("/metrics", (req, res) => {
+    res.set('Content-Type', prometheusMetrics.contentType);
+    res.end(prometheusMetrics.metrics());
+});
 
 app.use("/games", gamesRouter);
 

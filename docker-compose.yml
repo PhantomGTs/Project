@@ -1,17 +1,53 @@
 version: '3'
+
 services:
-  express-app:
-    build:
-      context: .
-      dockerfile: Dockerfile-express
+  app:
+    build: .
     ports:
       - "4000:4000"
-    depends_on:
-      - grafana
+
+  # grafana:
+  #   image: grafana/grafana:8.0.0
+  #   ports:
+  #     - "3000:3000"
+  #   # depends_on:
+  #   #   - prometheus
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus:/etc/prometheus/
+    container_name: prometheus
+    hostname: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Moscow"
+    networks:
+      - default
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    container_name: node-exporter
+    restart: always
 
   grafana:
-    image: grafana/grafana:latest
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+    image: grafana/grafana:8.0.0
+    user: root
+    depends_on:
+      - prometheus
     ports:
       - "3000:3000"
+    volumes:
+      - ./grafana:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    container_name: grafana
+    hostname: grafana
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Moscow"

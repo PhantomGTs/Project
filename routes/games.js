@@ -1,9 +1,25 @@
 const express = require("express")
 const router = express.Router()
 const { nanoid } = require("nanoid")
-const prometheus = require('prom-client');
+const promClient = require('prom-client');
 
 const idLenght = 8
+
+// let requestCounter = 0;
+
+// // Cчетчик для метрик
+// const requestCounter = new promClient.Counter({
+//     name: 'game_delete_requests',
+//     help: 'Total number of delete requests for games',
+//     labelNames: ['game_id'],
+//   });
+
+// Cчетчик для успешных запросов (HTTP 200)
+const successfulRequestsCounter = new promClient.Counter({
+    name: 'successful_http_requests',
+    help: 'Total number of successful HTTP requests',
+    labelNames: ['path'], 
+  });
 
 /**
  * @swagger
@@ -30,7 +46,7 @@ const idLenght = 8
  *         description: enter discription
  */
 
- /**
+/**
   * @swagger
   * tags:
   *   name: Games
@@ -63,7 +79,6 @@ router.get("/:id", (req, res) => {
     const game = req.app.db.get('games').find({id: req.params.id}).value()
     res.send(game)
 })
-
 
 
 /**
@@ -104,7 +119,6 @@ router.post("/", (req, res) => {
     }
 });
 
-
 /**
  * @swagger
  * /games:
@@ -127,7 +141,6 @@ router.post("/", (req, res) => {
  *       500:
  *         description: Some server error
  */
-
 
 router.put("/:id", (req, res) => {
     try{
@@ -179,6 +192,34 @@ router.delete("/:id", (req, res) => {
     res.sendStatus(200)
 })
 
+
+router.get("/delete/:id", async (req, res) => {
+    // try {
+        req.app.db.get("games").remove({ id: req.params.id }).write();
+        
+        // Увеличиваем счетчик успешных запросов
+        successfulRequestsCounter.inc({ path: req.path });
+
+        res.redirect("/games");
+    // } catch (error) {
+    //     console.error(error);
+    //     res.status(500).send("Internal Server Error");
+    // }
+});
+
+// Маршрут для экспорта метрик
+router.get('/metrics', async (req, res) => {
+    res.set('Content-Type', promClient.register.contentType);
+  
+    try {
+      const metrics = await promClient.register.metrics();
+      res.end(metrics);
+    } catch (err) {
+      console.error('Error getting metrics:', err);
+      res.status(500).end();
+    }
+  });
+
 /**
  * @swagger
  * /games/{id}:
@@ -200,10 +241,14 @@ router.delete("/:id", (req, res) => {
  *         description: The game was not found
  */
 
-router.get("/delete/:id", (req, res) => {
-    req.app.db.get("games").remove({ id: req.params.id }).write();
-    res.redirect("/games");
-});
+// router.get("/delete/:id", (req, res) => {
+//     // requestCounter++;
+//     // console.log(requestCounter);
+//     req.app.db.get("games").remove({ id: req.params.id }).write();
+//     res.redirect("/games");
+// });
+
+
 
 router.post("/edit/:id", (req, res) => {
     try {
@@ -247,6 +292,11 @@ router.get("/:id", (req, res) => {
     const game = req.app.db.get('games').find({ id: req.params.id }).value();
     res.render("gameDetail", { game });
 });
+
+// router.get("/counter", (req, res) => 
+// {
+//     res.send(requestCounter);
+// });
 
 
 module.exports = router;
